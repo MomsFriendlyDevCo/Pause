@@ -6,7 +6,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 
 const app = new URL('../app.js', import.meta.url).pathname;
 
-test('wait for a simple duration', ()=> {
+test('pause for a simple duration', ()=> {
 	let start = Date.now();
 	return execa(app, ['100ms'])
 		.then(({exitCode})=> {
@@ -16,7 +16,7 @@ test('wait for a simple duration', ()=> {
 });
 
 
-test('run a command after waiting ("then" syntax)', ()=>
+test('run a command after pausing ("then" syntax)', ()=>
 	execa(app, ['for', '50ms', 'then', 'echo', 'hello'])
 		.then(({stdout, exitCode})=> {
 			test.expect(exitCode).to.equal(0);
@@ -25,7 +25,7 @@ test('run a command after waiting ("then" syntax)', ()=>
 );
 
 
-test('run a command after waiting ("--" syntax)', ()=>
+test('run a command after pausing ("--" syntax)', ()=>
 	execa(app, ['50ms', '--', 'echo', 'world'])
 		.then(({stdout, exitCode})=> {
 			test.expect(exitCode).to.equal(0);
@@ -40,7 +40,7 @@ test('pass through command exit codes', ()=>
 );
 
 
-test('wait until a PID exits').timeout('5s').do(()=> {
+test('pause until a PID exits').timeout('5s').do(()=> {
 	let child = execa('sleep', ['0.5']);
 	let start = Date.now();
 	return execa(app, ['until', String(child.pid), 'exits'])
@@ -52,8 +52,8 @@ test('wait until a PID exits').timeout('5s').do(()=> {
 });
 
 
-test('wait for a path to change').timeout('5s').do(t => {
-	let path = `${os.tmpdir()}/wait-test-${process.pid}-${Date.now()}.txt`;
+test('pause until a path changes').timeout('5s').do(t => {
+	let path = `${os.tmpdir()}/pause-test-${process.pid}-${Date.now()}.txt`;
 	let waiter;
 	return fs.writeFile(path, 'initial')
 		.then(()=> {
@@ -94,7 +94,7 @@ test('OR conditions resolve on the fastest branch', ()=> {
 });
 
 
-test('AND conditions wait for the slowest', ()=> {
+test('AND conditions pause for the slowest', ()=> {
 	let start = Date.now();
 	return execa(app, ['50ms', 'and', '150ms'])
 		.then(({exitCode})=> {
@@ -104,7 +104,7 @@ test('AND conditions wait for the slowest', ()=> {
 });
 
 
-test('repeat the wait + command cycle', ()=> {
+test('repeat the pause + command cycle', ()=> {
 	let start = Date.now();
 	return execa(app, ['--repeat', '3', '30ms', 'then', 'echo', 'tick'])
 		.then(({stdout, exitCode})=> {
@@ -125,9 +125,9 @@ test('inverted conditions flip the match', ()=> {
 test('display a tick-list of conditions by default', ()=>
 	execa(app, ['100ms'])
 		.then(({stderr})=> {
-			test.expect(stderr).to.match(/○ Wait 100ms/); // Pending at first...
+			test.expect(stderr).to.match(/○ Pause 100ms/); // Pending at first...
 			test.expect(stderr).to.match(/remaining/); // ...with a countdown...
-			test.expect(stderr).to.match(/✔ Wait 100ms/); // ...then ticked once satisfied
+			test.expect(stderr).to.match(/✔ Pause 100ms/); // ...then ticked once satisfied
 		})
 );
 
@@ -136,7 +136,7 @@ test('display OR group separators', ()=>
 	execa(app, ['50ms', 'or', '1h'])
 		.then(({stderr})=> {
 			test.expect(stderr).to.match(/-- OR --/);
-			test.expect(stderr).to.match(/✔ Wait 50ms/);
+			test.expect(stderr).to.match(/✔ Pause 50ms/);
 		})
 );
 
@@ -144,8 +144,8 @@ test('display OR group separators', ()=>
 test('display timed out conditions', ()=>
 	execa(app, ['--timeout', '100ms', 'load', 'above', '9999'], {reject: false})
 		.then(({stderr})=> {
-			test.expect(stderr).to.match(/○ Wait for load > 9999 \(currently [\d.]+\)/);
-			test.expect(stderr).to.match(/✘ Wait for load > 9999 \(timed out\)/);
+			test.expect(stderr).to.match(/○ Pause for load > 9999 \(currently [\d.]+\)/);
+			test.expect(stderr).to.match(/✘ Pause for load > 9999 \(timed out\)/);
 		})
 );
 
@@ -186,7 +186,7 @@ test('reject calls with no conditions', ()=>
 	execa(app, [], {reject: false})
 		.then(({exitCode, stderr})=> {
 			test.expect(exitCode).to.equal(2);
-			test.expect(stderr).to.match(/no wait conditions/i);
+			test.expect(stderr).to.match(/no pause conditions/i);
 		})
 );
 

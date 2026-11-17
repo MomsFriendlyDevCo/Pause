@@ -7,8 +7,8 @@ import 'commander-extras';
 import {spawn} from 'node:child_process';
 import timestring from 'timestring';
 import {Display} from './lib/display.js';
-import {parseWaitArgs} from './lib/parse.js';
-import {waitFor} from './lib/wait.js';
+import {parsePauseArgs} from './lib/parse.js';
+import {pauseFor} from './lib/pause.js';
 
 // Split off any command following a literal `--` before Commander can mangle it
 let argv = process.argv;
@@ -21,8 +21,8 @@ if (dashOffset > -1) {
 
 // Parse Command line
 let args = program
-	.name('wait')
-	.description('Wait for one or more conditions then either do-a-thing or return a zero exit code')
+	.name('pause')
+	.description('Pause for one or more conditions then either do-a-thing or return a zero exit code')
 	.argument('["for"|"until"] [conditions...] ["then"] [--] [command]')
 	.option('--loop, --repeat <n>', 'Repeat N number of times before exiting')
 	.option('--invert, -v', 'Invert the match condition')
@@ -30,18 +30,18 @@ let args = program
 	.option('--timeout-as <exit-code>', 'Raise the given exit code when timing out', 1)
 	.option('--quiet, -q', 'Suppress the condition progress display')
 	.allowExcessArguments()
-	.note('CONDITION: [timestring] - any valid, parsable timestring compatible expression to denote waiting for a time')
+	.note('CONDITION: [timestring] - any valid, parsable timestring compatible expression to denote pause/waiting for a time')
 	.note('CONDITION: [time] - pause until the given, relative or parsable time')
-	.note('CONDITION: [pid] <"exits"|"fails"|"stops"> - wait for the PID to exit (correctly | non-zero exit|quits for any reason)')
-	.note('CONDITION: <"path"|"for changes to"> [path] ["changes"|"to change"]', 'wait for a path to change')
-	.note('CONDITION: <"load"> <"<"|"<="|">="|"above"|"below"> [number]', 'wait for system load to satisfy a condition')
+	.note('CONDITION: [pid] <"exits"|"fails"|"stops"> - pause until the PID to exit (correctly | non-zero exit|quits for any reason)')
+	.note('CONDITION: <"path"|"for changes to"> [path] ["changes"|"to change"]', 'pause until path changes')
+	.note('CONDITION: <"load"> <"<"|"<="|">="|"above"|"below"> [number]', 'pause until system load satisfies a condition')
 	.note('OPERAND: <a> AND <b>', 'Join two+ conditionals together with an AND operator')
 	.note('OPERAND: <a> OR <b>', 'Join two+ conditionals together with an OR operator')
-	.example('wait 1h', 'Wait for one hour then exit')
-	.example('wait until 123 exits', 'Wait until PID 123 exits with a positive exit code')
-	.example('wait until 3pm', 'Wait until the next time 3pm occurs')
-	.example('wait until tuesday', 'Wait until Tuesday occurs')
-	.example('wait for 1h OR 123 fails', 'Wait for 1 hour OR PID 123 exits with a non-zero code')
+	.example('pause 1h', 'Pause for one hour then exit')
+	.example('pause until 123 exits', 'Pause until PID 123 exits with a positive exit code')
+	.example('pause until 3pm', 'Pause until the next time 3pm occurs')
+	.example('pause until tuesday', 'Pause until Tuesday occurs')
+	.example('pause for 1h OR 123 fails', 'Pause for 1 hour OR PID 123 exits with a non-zero code')
 	.parse(argv);
 
 args = { // Flatten into POJO of option keys + `args:Array<String>`
@@ -51,7 +51,7 @@ args = { // Flatten into POJO of option keys + `args:Array<String>`
 
 Promise.resolve()
 	.then(()=> {
-		let parsed = parseWaitArgs(args.args);
+		let parsed = parsePauseArgs(args.args);
 		if (parsed.command.length > 0) command = parsed.command;
 
 		let repeat = args.repeat ? Number.parseInt(args.repeat) : 1;
@@ -75,16 +75,16 @@ Promise.resolve()
 			? null
 			: new Display(conditions, {timeout});
 
-		// Run the wait (+ optional command) cycle `repeat` times in series
+		// Run the pause (+ optional command) cycle `repeat` times in series
 		return Array.from({length: repeat})
 			.reduce(chain => chain
 				.then(()=> {
-					let waiting = waitFor(conditions, { // Stamps condition state synchronously...
+					let pauseing = pauseFor(conditions, { // Stamps condition state synchronously...
 						invert: !! args.invert,
 						timeout,
 					});
 					display?.start(); // ...so the display can begin rendering it
-					return waiting;
+					return pauseing;
 				})
 				.then(satisfied => {
 					display?.stop(satisfied);

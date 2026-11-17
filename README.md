@@ -1,11 +1,11 @@
-@MomsFriendlyDevCo/Wait
+@MomsFriendlyDevCo/Pause
 =======================
-A Command Line Interface (CLI) to, well, *wait* for things then exit.
+A Command Line Interface (CLI) to, well, *pause* until conditions are satisified and then either run another command or exit with a zero exit code.
 
 ```
-Usage: wait [options] ["for"|"until"] [conditions...] ["then"] [--] [command]
+Usage: pause [options] ["for"|"until"] [conditions...] ["then"] [--] [command]
 
-Wait for one or more conditions then either do-a-thing or return a zero exit
+Pause for one or more conditions then either do-a-thing or return a zero exit
 code
 
 Options:
@@ -18,9 +18,9 @@ Options:
   -h, --help                display help for command
 
 Notes:
-  * CONDITION: [timestring] - any valid, parsable timestring compatible expression to denote waiting for a time
+  * CONDITION: [timestring] - any valid, parsable timestring compatible expression to denote pause/waiting for a time
   * CONDITION: [time] - pause until the given, relative or parsable time
-  * CONDITION: [pid] <"exits"|"fails"|"stops"> - wait for the PID to exit (correctly | non-zero exit|quits for any reason)
+  * CONDITION: [pid] <"exits"|"fails"|"stops"> - pause until the PID to exit (correctly | non-zero exit|quits for any reason)
   * CONDITION: <"path"|"for changes to"> [path] ["changes"|"to change"]
   * CONDITION: <"load"> <"<"|"<="|">="|"above"|"below"> [number]
   * OPERAND: <a> AND <b>
@@ -28,18 +28,18 @@ Notes:
 
 Examples:
 
-  # Wait for one hour then exit
-  wait 1h
+  # Pause for one hour then exit
+  pause 1h
 
-  # Wait until PID 123 exits with a positive exit code
-  wait until 123 exits
+  # Pause until PID 123 exits with a positive exit code
+  pause until 123 exits
 
-  # Wait until the next time 3pm occurs
-  wait until 3pm
+  # Pause until the next time 3pm occurs
+  pause until 3pm
 
-  # Wait until Tuesday occurs
-  wait until tuesday
+  # Pause until Tuesday occurs
+  pause until tuesday
 
-  # Wait for 1 hour OR PID 123 exits with a non-zero code
-  wait for 1h OR 123 fails
+  # Pause for 1 hour OR PID 123 exits with a non-zero code
+  pause for 1h OR 123 fails
 ```

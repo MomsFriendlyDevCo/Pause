@@ -1,36 +1,36 @@
 import test from '@momsfriendlydevco/testa';
-import {parseWaitArgs, parseTime} from '../lib/parse.js';
+import {parsePauseArgs, parseTime} from '../lib/parse.js';
 
 test('parse simple durations', ()=> {
-	test.expect(parseWaitArgs(['100ms']).conditions).to.deep.equal([[{type: 'delay', ms: 100}]]);
-	test.expect(parseWaitArgs(['for', '1h']).conditions).to.deep.equal([[{type: 'delay', ms: 3_600_000}]]);
-	test.expect(parseWaitArgs(['5', 'minutes']).conditions).to.deep.equal([[{type: 'delay', ms: 300_000}]]); // Two-token durations
+	test.expect(parsePauseArgs(['100ms']).conditions).to.deep.equal([[{type: 'delay', ms: 100}]]);
+	test.expect(parsePauseArgs(['for', '1h']).conditions).to.deep.equal([[{type: 'delay', ms: 3_600_000}]]);
+	test.expect(parsePauseArgs(['5', 'minutes']).conditions).to.deep.equal([[{type: 'delay', ms: 300_000}]]); // Two-token durations
 });
 
 
 test('parse PID conditions', ()=> {
-	test.expect(parseWaitArgs(['until', '123', 'exits']).conditions).to.deep.equal([[{type: 'pid', pid: 123}]]);
-	test.expect(parseWaitArgs(['456', 'fails']).conditions).to.deep.equal([[{type: 'pid', pid: 456}]]);
-	test.expect(parseWaitArgs(['789', 'stops']).conditions).to.deep.equal([[{type: 'pid', pid: 789}]]);
+	test.expect(parsePauseArgs(['until', '123', 'exits']).conditions).to.deep.equal([[{type: 'pid', pid: 123}]]);
+	test.expect(parsePauseArgs(['456', 'fails']).conditions).to.deep.equal([[{type: 'pid', pid: 456}]]);
+	test.expect(parsePauseArgs(['789', 'stops']).conditions).to.deep.equal([[{type: 'pid', pid: 789}]]);
 });
 
 
 test('parse path conditions', ()=> {
-	test.expect(parseWaitArgs(['path', '/tmp/x', 'changes']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
-	test.expect(parseWaitArgs(['path', '/tmp/x', 'to', 'change']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
-	test.expect(parseWaitArgs(['for', 'changes', 'to', '/tmp/x']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
+	test.expect(parsePauseArgs(['path', '/tmp/x', 'changes']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
+	test.expect(parsePauseArgs(['path', '/tmp/x', 'to', 'change']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
+	test.expect(parsePauseArgs(['for', 'changes', 'to', '/tmp/x']).conditions).to.deep.equal([[{type: 'path', path: '/tmp/x'}]]);
 });
 
 
 test('parse load conditions', ()=> {
-	test.expect(parseWaitArgs(['load', 'above', '2']).conditions).to.deep.equal([[{type: 'load', op: '>', value: 2}]]);
-	test.expect(parseWaitArgs(['load', 'below', '0.5']).conditions).to.deep.equal([[{type: 'load', op: '<', value: 0.5}]]);
-	test.expect(parseWaitArgs(['load', '<=', '1.5']).conditions).to.deep.equal([[{type: 'load', op: '<=', value: 1.5}]]);
+	test.expect(parsePauseArgs(['load', 'above', '2']).conditions).to.deep.equal([[{type: 'load', op: '>', value: 2}]]);
+	test.expect(parsePauseArgs(['load', 'below', '0.5']).conditions).to.deep.equal([[{type: 'load', op: '<', value: 0.5}]]);
+	test.expect(parsePauseArgs(['load', '<=', '1.5']).conditions).to.deep.equal([[{type: 'load', op: '<=', value: 1.5}]]);
 });
 
 
 test('parse AND / OR compounds', ()=> {
-	test.expect(parseWaitArgs(['100ms', 'and', '200ms', 'or', '300ms']).conditions).to.deep.equal([
+	test.expect(parsePauseArgs(['100ms', 'and', '200ms', 'or', '300ms']).conditions).to.deep.equal([
 		[
 			{type: 'delay', ms: 100},
 			{type: 'delay', ms: 200},
@@ -43,7 +43,7 @@ test('parse AND / OR compounds', ()=> {
 
 
 test('parse the "then" command split', ()=> {
-	let {conditions, command} = parseWaitArgs(['1h', 'then', 'echo', 'hi', 'there']);
+	let {conditions, command} = parsePauseArgs(['1h', 'then', 'echo', 'hi', 'there']);
 	test.expect(conditions).to.deep.equal([[{type: 'delay', ms: 3_600_000}]]);
 	test.expect(command).to.deep.equal(['echo', 'hi', 'there']);
 });
@@ -80,23 +80,23 @@ test('reject invalid time expressions', ()=> {
 
 
 test('throw on unparsable conditions', ()=> {
-	test.expect(()=> parseWaitArgs(['blarg'])).to.throw(/unknown condition/i);
-	test.expect(()=> parseWaitArgs(['untill', '3pm'])).to.throw(/unknown condition/i); // Typo'd "until"
-	test.expect(()=> parseWaitArgs(['100sm'])).to.throw(/unknown condition/i); // Typo'd unit
-	test.expect(()=> parseWaitArgs(['123', 'exists'])).to.throw(/unknown condition/i); // Typo'd PID verb
-	test.expect(()=> parseWaitArgs(['until', '99:99'])).to.throw(/unknown condition/i);
+	test.expect(()=> parsePauseArgs(['blarg'])).to.throw(/unknown condition/i);
+	test.expect(()=> parsePauseArgs(['untill', '3pm'])).to.throw(/unknown condition/i); // Typo'd "until"
+	test.expect(()=> parsePauseArgs(['100sm'])).to.throw(/unknown condition/i); // Typo'd unit
+	test.expect(()=> parsePauseArgs(['123', 'exists'])).to.throw(/unknown condition/i); // Typo'd PID verb
+	test.expect(()=> parsePauseArgs(['until', '99:99'])).to.throw(/unknown condition/i);
 });
 
 
 test('throw on malformed load conditions', ()=> {
-	test.expect(()=> parseWaitArgs(['load', 'wibble', '5'])).to.throw(/unknown load operator/i);
-	test.expect(()=> parseWaitArgs(['load', 'above', 'banana'])).to.throw(/need a number/i);
-	test.expect(()=> parseWaitArgs(['load'])).to.throw(/unknown load operator/i);
+	test.expect(()=> parsePauseArgs(['load', 'wibble', '5'])).to.throw(/unknown load operator/i);
+	test.expect(()=> parsePauseArgs(['load', 'above', 'banana'])).to.throw(/need a number/i);
+	test.expect(()=> parsePauseArgs(['load'])).to.throw(/unknown load operator/i);
 });
 
 
 test('throw on structural errors', ()=> {
-	test.expect(()=> parseWaitArgs([])).to.throw(/no wait conditions/i);
-	test.expect(()=> parseWaitArgs(['100ms', 'and'])).to.throw(/trailing/i);
-	test.expect(()=> parseWaitArgs(['100ms', 'or'])).to.throw(/trailing/i);
+	test.expect(()=> parsePauseArgs([])).to.throw(/no pause conditions/i);
+	test.expect(()=> parsePauseArgs(['100ms', 'and'])).to.throw(/trailing/i);
+	test.expect(()=> parsePauseArgs(['100ms', 'or'])).to.throw(/trailing/i);
 });

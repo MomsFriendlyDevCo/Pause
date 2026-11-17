@@ -13,9 +13,9 @@ test('format durations compactly', ()=> {
 
 
 test('describe conditions as sentences', ()=> {
-	test.expect(describeCondition({type: 'delay', ms: 100})).to.equal('Wait 100ms');
-	test.expect(describeCondition({type: 'delay', ms: 3_600_000})).to.equal('Wait 1h');
-	test.expect(describeCondition({type: 'pid', pid: 123})).to.equal('Wait for PID 123 to exit');
-	test.expect(describeCondition({type: 'path', path: '/tmp/x'})).to.equal('Wait for /tmp/x to change');
-	test.expect(describeCondition({type: 'load', op: '>', value: 2})).to.equal('Wait for load > 2');
+	test.expect(describeCondition({type: 'delay', ms: 100})).to.equal('Pause 100ms');
+	test.expect(describeCondition({type: 'delay', ms: 3_600_000})).to.equal('Pause 1h');
+	test.expect(describeCondition({type: 'pid', pid: 123})).to.equal('Pause for PID 123 to exit');
+	test.expect(describeCondition({type: 'path', path: '/tmp/x'})).to.equal('Pause for /tmp/x to change');
+	test.expect(describeCondition({type: 'load', op: '>', value: 2})).to.equal('Pause for load > 2');
 });

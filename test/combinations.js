@@ -1,13 +1,13 @@
 import test from '@momsfriendlydevco/testa';
 import {execa} from 'execa';
-import {parseWaitArgs} from '../lib/parse.js';
-import {waitFor} from '../lib/wait.js';
+import {parsePauseArgs} from '../lib/parse.js';
+import {pauseFor} from '../lib/pause.js';
 
 const app = new URL('../app.js', import.meta.url).pathname;
 
 // Parse level {{{
 test('parse chained ANDs into a single group', ()=> {
-	test.expect(parseWaitArgs(['100ms', 'and', '200ms', 'and', '300ms']).conditions).to.deep.equal([[
+	test.expect(parsePauseArgs(['100ms', 'and', '200ms', 'and', '300ms']).conditions).to.deep.equal([[
 		{type: 'delay', ms: 100},
 		{type: 'delay', ms: 200},
 		{type: 'delay', ms: 300},
@@ -16,7 +16,7 @@ test('parse chained ANDs into a single group', ()=> {
 
 
 test('parse chained ORs into separate groups', ()=> {
-	test.expect(parseWaitArgs(['100ms', 'or', '200ms', 'or', '300ms']).conditions).to.deep.equal([
+	test.expect(parsePauseArgs(['100ms', 'or', '200ms', 'or', '300ms']).conditions).to.deep.equal([
 		[{type: 'delay', ms: 100}],
 		[{type: 'delay', ms: 200}],
 		[{type: 'delay', ms: 300}],
@@ -26,7 +26,7 @@ test('parse chained ORs into separate groups', ()=> {
 
 test('parse AND as binding tighter than OR', ()=> {
 	// a AND b OR c => (a AND b) OR c
-	test.expect(parseWaitArgs(['1h', 'and', '2h', 'or', '3h']).conditions).to.deep.equal([
+	test.expect(parsePauseArgs(['1h', 'and', '2h', 'or', '3h']).conditions).to.deep.equal([
 		[
 			{type: 'delay', ms: 3_600_000},
 			{type: 'delay', ms: 7_200_000},
@@ -35,7 +35,7 @@ test('parse AND as binding tighter than OR', ()=> {
 	]);
 
 	// a OR b AND c => a OR (b AND c)
-	test.expect(parseWaitArgs(['1h', 'or', '2h', 'and', '3h']).conditions).to.deep.equal([
+	test.expect(parsePauseArgs(['1h', 'or', '2h', 'and', '3h']).conditions).to.deep.equal([
 		[{type: 'delay', ms: 3_600_000}],
 		[
 			{type: 'delay', ms: 7_200_000},
@@ -46,13 +46,13 @@ test('parse AND as binding tighter than OR', ()=> {
 
 
 test('parse operators case insensitively', ()=> {
-	test.expect(parseWaitArgs(['1h', 'AND', '2h']).conditions).to.deep.equal(parseWaitArgs(['1h', 'and', '2h']).conditions);
-	test.expect(parseWaitArgs(['1h', 'Or', '2h']).conditions).to.deep.equal(parseWaitArgs(['1h', 'or', '2h']).conditions);
+	test.expect(parsePauseArgs(['1h', 'AND', '2h']).conditions).to.deep.equal(parsePauseArgs(['1h', 'and', '2h']).conditions);
+	test.expect(parsePauseArgs(['1h', 'Or', '2h']).conditions).to.deep.equal(parsePauseArgs(['1h', 'or', '2h']).conditions);
 });
 
 
 test('parse mixed condition types in compounds', ()=> {
-	test.expect(parseWaitArgs(['123', 'exits', 'and', 'load', 'below', '2', 'or', 'path', '/tmp/x', 'changes']).conditions).to.deep.equal([
+	test.expect(parsePauseArgs(['123', 'exits', 'and', 'load', 'below', '2', 'or', 'path', '/tmp/x', 'changes']).conditions).to.deep.equal([
 		[
 			{type: 'pid', pid: 123},
 			{type: 'load', op: '<', value: 2},
@@ -62,10 +62,10 @@ test('parse mixed condition types in compounds', ()=> {
 });
 // }}}
 
-// waitFor() level {{{
-test('waitFor resolves AND groups at the slowest member', ()=> {
+// pauseFor() level {{{
+test('pauseFor resolves AND groups at the slowest member', ()=> {
 	let start = Date.now();
-	return waitFor([[
+	return pauseFor([[
 		{type: 'delay', ms: 50},
 		{type: 'delay', ms: 150},
 	]])
@@ -76,9 +76,9 @@ test('waitFor resolves AND groups at the slowest member', ()=> {
 });
 
 
-test('waitFor resolves OR groups at the fastest group', ()=> {
+test('pauseFor resolves OR groups at the fastest group', ()=> {
 	let start = Date.now();
-	return waitFor([
+	return pauseFor([
 		[{type: 'delay', ms: 400}],
 		[{type: 'delay', ms: 50}],
 	])
@@ -90,10 +90,10 @@ test('waitFor resolves OR groups at the fastest group', ()=> {
 });
 
 
-test('waitFor marks individual conditions as satisfied', ()=> {
+test('pauseFor marks individual conditions as satisfied', ()=> {
 	let fast = {type: 'delay', ms: 50};
 	let slow = {type: 'delay', ms: 400};
-	return waitFor([[fast], [slow]])
+	return pauseFor([[fast], [slow]])
 		.then(()=> {
 			test.expect(fast.satisfied).to.be.true;
 			test.expect(slow.satisfied).to.be.false;
@@ -101,9 +101,9 @@ test('waitFor marks individual conditions as satisfied', ()=> {
 });
 
 
-test('waitFor races (a AND b) OR c on the faster branch', ()=> {
+test('pauseFor races (a AND b) OR c on the faster branch', ()=> {
 	let start = Date.now();
-	return waitFor([
+	return pauseFor([
 		[
 			{type: 'delay', ms: 50},
 			{type: 'delay', ms: 800},
@@ -118,11 +118,11 @@ test('waitFor races (a AND b) OR c on the faster branch', ()=> {
 });
 
 
-test('waitFor times out when no group can fully satisfy', ()=> {
+test('pauseFor times out when no group can fully satisfy', ()=> {
 	let fast = {type: 'delay', ms: 50};
 	let slow = {type: 'delay', ms: 600};
 	let start = Date.now();
-	return waitFor([[fast, slow]], {timeout: 150})
+	return pauseFor([[fast, slow]], {timeout: 150})
 		.then(satisfied => {
 			test.expect(satisfied).to.be.false;
 			test.expect(Date.now() - start).to.be.below(550);
@@ -139,12 +139,12 @@ test('e2e: a AND b OR c resolves via the fast OR branch', ()=> {
 		.then(({exitCode, stderr})=> {
 			test.expect(exitCode).to.equal(0);
 			test.expect(Date.now() - start).to.be.below(5000);
-			test.expect(stderr).to.match(/✔ Wait 100ms/);
+			test.expect(stderr).to.match(/✔ Pause 100ms/);
 		});
 });
 
 
-test('e2e: a OR b AND c waits for the full AND group', ()=> {
+test('e2e: a OR b AND c pauses for the full AND group', ()=> {
 	let start = Date.now();
 	return execa(app, ['1h', 'or', '50ms', 'and', '200ms'])
 		.then(({exitCode})=> {
@@ -182,8 +182,8 @@ test('e2e: AND requires every condition before timing out', ()=>
 	], {reject: false})
 		.then(({exitCode, stderr})=> {
 			test.expect(exitCode).to.equal(5);
-			test.expect(stderr).to.match(/✔ Wait 10ms/); // The satisfiable half ticked...
-			test.expect(stderr).to.match(/✘ Wait for load > 9999 \(timed out\)/); // ...the impossible half failed
+			test.expect(stderr).to.match(/✔ Pause 10ms/); // The satisfiable half ticked...
+			test.expect(stderr).to.match(/✘ Pause for load > 9999 \(timed out\)/); // ...the impossible half failed
 		})
 );
 
@@ -191,8 +191,8 @@ test('e2e: AND requires every condition before timing out', ()=>
 test('e2e: only the winning OR branch gets ticked', ()=>
 	execa(app, ['50ms', 'or', '1h'])
 		.then(({stderr})=> {
-			test.expect(stderr).to.match(/✔ Wait 50ms/);
-			test.expect(stderr).to.not.match(/✔ Wait 1h/);
+			test.expect(stderr).to.match(/✔ Pause 50ms/);
+			test.expect(stderr).to.not.match(/✔ Pause 1h/);
 		})
 );
 // }}}
